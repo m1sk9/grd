@@ -1,0 +1,67 @@
+name: Build grd
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install latest stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "grd/gh-actions-check-cache"
+
+      - name: Run rustfmt
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run tests
+        run: cargo test --all-features
+
+  build:
+    strategy:
+      matrix:
+        target:
+          - x86_64-pc-windows-msvc
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+          - x86_64-unknown-linux-gnu
+        include:
+          - target: x86_64-pc-windows-msvc
+            host: windows-latest
+          - target: x86_64-apple-darwin
+            host: macos-latest
+          - target: aarch64-apple-darwin
+            host: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            host: ubuntu-latest
+    runs-on: ${{ matrix.host }}
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+    
+      - name: Install latest stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - id: cache-key
+        run: echo "key=$(echo '${{ toJSON(matrix) }}' | shasum -a 256)" >> $GITHUB_OUTPUT
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ steps.cache-key.outputs.key }}
+
+      - name: Build grd
+        run: cargo build --release --target '${{ matrix.target }}'
