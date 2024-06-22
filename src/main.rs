@@ -1,29 +1,14 @@
-use std::env;
+use clap::Parser;
+use cmd::GrdCli;
 
-use clap::{Parser, Subcommand};
+mod cmd;
 
-#[derive(Parser)]
-#[command(
-    name = "grd",
-    about = env!("CARGO_PKG_DESCRIPTION"),
-    author = env!("CARGO_PKG_AUTHORS"),
-    version = env!("CARGO_PKG_VERSION")
-)]
-struct GrdCli {
-    #[command(subcommand)]
-    command: GrdCliCommand,
-}
-
-#[derive(Subcommand)]
-enum GrdCliCommand {
-    Install {
-        owner: String,
-        repo: String,
-        tag: Option<String>,
-        artifact_name: Option<String>,
-    },
-}
-
-fn main() {
-    println!("Hello, world!")
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let result = GrdCli::parse().run().await;
+    if let Err(why) = result {
+        eprintln!("Error: {}", why);
+        std::process::exit(1);
+    }
+    Ok(())
 }
