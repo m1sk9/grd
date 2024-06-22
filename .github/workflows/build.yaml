@@ -64,4 +64,4 @@ jobs:
           key: ${{ steps.cache-key.outputs.key }}
 
       - name: Build grd
-        run: cargo build --release --target '${{ matrix.target }}'
+        run: cargo build --target '${{ matrix.target }}'
